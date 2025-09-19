@@ -14,14 +14,20 @@ private:
     uint64_t *moduli;
 
     NTL::ZZ M;        // product of all moduli
+    NTL::ZZ KMask;    // 2^K - 1, where K = bits in M
 
     NTL::ZZ  *Mi;     // M / mi
     uint64_t *Mi_inv; // (M / mi)^-1 mod mi
+    uint64_t *Mi_inv_prec; // precomputed value for Shoup's method
 
     NTL::ZZ *Bi;      // bi = Mi * mi
+    NTL::ZZ *Di;      // ceil(2^K * Bi / M) = ceil(2^K * Mi_inv / mi)
+
+    size_t K;         // bits for approximate method
 
     void compute_M();
     void compute_Bi();
+    void compute_approx();
 public:
 
     /* main constructors and operators */
@@ -43,7 +49,10 @@ public:
 
     /* conversion */
     void to_rns(uint64_t *rns, NTL::ZZ x) const;
-    NTL::ZZ from_rns(const uint64_t *rns) const;
+    NTL::ZZ from_rns_classic(const uint64_t *rns) const;
+    NTL::ZZ from_rns_small(const uint64_t *rns) const;
+    NTL::ZZ from_rns_approx(const uint64_t *rns) const;
+
 };
 
 }

@@ -35,7 +35,7 @@ int main(/*int argc, char const *argv[]*/) {
     print_array(rns_x, N);
     cout << endl;
 
-    NTL::ZZ x_recovered = rns.from_rns(rns_x);
+    NTL::ZZ x_recovered = rns.from_rns_classic(rns_x);
     cout << "x recovered from RNS = " << x_recovered << endl;
 
     return 0;
