@@ -5,8 +5,8 @@
 
 using namespace modular;
 
-const size_t TEST_RNS_ITERS = 20;
-const size_t TEST_NUMBER_ITERS = 100;
+const size_t TEST_RNS_ITERS = 10;
+const size_t TEST_NUMBER_ITERS = 10000;
 
 void basic_test(size_t N, size_t logq) {
         uint64_t moduli[N];
@@ -120,7 +120,7 @@ void approx_recover_test(size_t N, size_t logq) {
             EXPECT_EQ(rns_rep[k], x % moduli[k]);
         }
         NTL::ZZ x_reconstructed = rns.from_rns_approx(rns_rep);
-        EXPECT_EQ(x_reconstructed, x % (NTL::ZZ(1) << rns.get_range_bits())); // Ensure reconstruction is correct modulo 2^K
+        EXPECT_EQ(x_reconstructed, x % (NTL::ZZ(1) << rns.get_range_bits())); // Ensure reconstruction is correct 
     }
 }
 
@@ -162,5 +162,76 @@ TEST(RNS, ApproxRecoverTest) {
         size_t logq = 20 + (rand() % 35);
 
         approx_recover_test(N, logq);
+    }
+}
+
+
+
+void approx_double_rns_test(size_t N, size_t logq) {
+    uint64_t moduli[N];
+
+    moduli[0] = FindFirstPrimeUp(logq, 2);
+    for (size_t i = 1; i < N; i++) {
+        moduli[i] = FindNextPrime(moduli[i-1], N);
+    }
+
+    RNS rns(N, moduli);
+
+    for (size_t i = 0; i < TEST_NUMBER_ITERS; i++) {
+        // Test conversion to RNS and back
+        NTL::ZZ x; // Example integer
+        NTL::RandomBits(x, rns.get_range_bits() - 1); // Random integer in range [0, M)
+        
+        uint64_t rns_rep[N];
+        rns.to_rns(rns_rep, x);
+
+        uint64_t x_rank = rns.rank_small(rns_rep);
+        uint64_t x_approx_rank = rns.rank_approx_double_small(rns_rep);
+        EXPECT_EQ(x_rank, x_approx_rank); 
+    }
+}
+
+void approx_int_rns_test(size_t N, size_t logq) {
+    uint64_t moduli[N];
+
+    moduli[0] = FindFirstPrimeUp(logq, 2);
+    for (size_t i = 1; i < N; i++) {
+        moduli[i] = FindNextPrime(moduli[i-1], N);
+    }
+
+    RNS rns(N, moduli);
+    rns.K_rank = logq; // set K_rank to logq, heuristic, change later!
+
+    for (size_t i = 0; i < TEST_NUMBER_ITERS; i++) {
+        // Test conversion to RNS and back
+        NTL::ZZ x; // Example integer
+        NTL::RandomBits(x, rns.get_range_bits() - 1); // Random integer in range [0, M)
+        
+        uint64_t rns_rep[N];
+        rns.to_rns(rns_rep, x);
+
+        uint64_t x_rank = rns.rank_small(rns_rep);
+        uint64_t x_approx_rank = rns.rank_approx_int_small(rns_rep);
+        EXPECT_EQ(x_rank, x_approx_rank); 
+    }
+}
+
+TEST(RNS, ApproxDoubleRankTest) {
+    for (size_t N = 10; N < 101; N+=10) {
+    
+        size_t logq = 55;
+
+        // std::cout << "rank test N = " << N << ", logq = " << logq << std::endl;
+        approx_double_rns_test(N, logq);
+    }
+}
+
+TEST(RNS, ApproxIntRankTest) {
+    for (size_t N = 10; N < 101; N+=10) {
+    
+        size_t logq = 55;
+
+        // std::cout << "rank test N = " << N << ", logq = " << logq << std::endl;
+        approx_int_rns_test(N, logq);
     }
 }

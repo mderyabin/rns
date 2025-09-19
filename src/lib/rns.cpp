@@ -43,15 +43,38 @@ void RNS::compute_approx() {
     }
 }
 
+void RNS::compute_rank() {
+    m_inv_approx = new double[N];
+    m_approx = new double[N];
+    for (size_t i = 0; i < N; i++) {
+        m_approx[i] = double(moduli[i]);
+        m_inv_approx[i] = 1.0 / m_approx[i];
+    }
+
+    K_rank = 55; // default value for rank computation, guessed
+    m_inv_approx_int = new uint64_t[N];
+    for (size_t i = 0; i < N; i++) {
+        long double tmp = static_cast<long double>(1ULL << K_rank) / static_cast<long double>(moduli[i]);
+        m_inv_approx_int[i] = static_cast<uint64_t>(floor(tmp));
+    } 
+
+    // for (size_t i = 0; i < N; i++) {
+    //     std::cout << "m_inv_approx_int[" << i << "] = " << m_inv_approx_int[i] << std::endl;
+    // }
+    
+}
+
 RNS::RNS(size_t N, const uint64_t *moduli) : N(N) {
     this->moduli = new uint64_t[N];
     for (size_t i = 0; i < N; i++) {
         this->moduli[i] = moduli[i];
     }
 
+
     compute_M();
     compute_Bi();
     compute_approx();
+    compute_rank();
 }
 
 RNS::~RNS() {
@@ -60,6 +83,10 @@ RNS::~RNS() {
     delete[] Mi_inv;
     delete[] Mi_inv_prec;
     delete[] Bi;
+    delete[] Di;
+    delete[] m_inv_approx;
+    delete[] m_approx;
+    delete[] m_inv_approx_int;
 }
 
 // Copy constructor
@@ -157,4 +184,54 @@ ZZ RNS::from_rns_approx(const uint64_t *rns) const {
     return (x * M) >> K; // floor(x * M / 2^K)
 }
 
+uint64_t RNS::rank_small(const uint64_t *rns) const {
+    ZZ x = ZZ(0);
+
+    uint64_t x_tmp = 0;
+
+    for (size_t i = 0; i < N; i++) {
+        x_tmp = mod_mul_shoup(rns[i], Mi_inv[i], moduli[i], Mi_inv_prec[i]);
+        x += (Mi[i] * x_tmp); 
+    }
+
+    uint64_t rank = 0;
+    while (x > M) { 
+        x -= M;
+        rank++;
+    }
+
+    // rank  = (x / M).SinglePrecision();
+    return rank;
 }
+
+uint64_t RNS::rank_approx_double_small(const uint64_t *rns) const {
+    double x = 0.0;
+    uint64_t x_tmp = 0;
+
+    for (size_t i = 0; i < N; i++) {
+        x_tmp = mod_mul_shoup(rns[i], Mi_inv[i], moduli[i], Mi_inv_prec[i]);
+        x +=  static_cast<double>(x_tmp) / double(moduli[i]); 
+        // x +=  double(x_tmp) / m_approx[i]; 
+        // x +=  double(x_tmp) * m_inv_approx[i]; 
+    }
+
+    uint64_t rank = static_cast<uint64_t>(x);
+    return rank;
+}
+
+uint64_t RNS::rank_approx_int_small(const uint64_t *rns) const {
+    uint64_t x = 0;
+    uint64_t x_tmp = 0;
+
+    for (size_t i = 0; i < N; i++) {
+        x_tmp = mod_mul_shoup(rns[i], Mi_inv[i], moduli[i], Mi_inv_prec[i]);
+        // x += x_tmp * m_inv_approx_int[i]; 
+        x += x_tmp; // heuristic, not finished, may not work
+    }
+
+    uint64_t rank = x >> (K_rank);
+    return rank;
+
+}
+
+} // namespace modular

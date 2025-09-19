@@ -10,8 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DERICTORY ${CMAKE_BINARY_DIR}/bin)
 
 # SET(CMAKE_CXX_FLAGS "-O3 -Wall -frtti -Wextra")
 SET(CMAKE_CXX_FLAGS "-O3")
-# SET(CMAKE_BUILD_TYPE "Release")
-SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_BUILD_TYPE "Release")
+# SET(CMAKE_BUILD_TYPE "Debug")
 include_directories("/opt/homebrew/include")
 link_directories("/opt/homebrew/lib/")
 
